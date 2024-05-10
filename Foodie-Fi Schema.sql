@@ -2782,12 +2782,16 @@ order by period;
 
 
 #Q11. How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
-select plan_id,count(distinct customer_id) 
-as downgraded_from_annual_to_basic 
-from subscriptions where plan_id =1 and customer_id
- in (select distinct customer_id 
+with next_plan as (
+select *, lead(plan_id,1) over(partition by customer_id 
+order by start_date, plan_id) as plan
 from subscriptions 
-where plan_id=2 and year(start_date)=2020);
+)
+select count(distinct customer_id) as downgrade
+from next_plan np
+left join plans p on p.plan_id = np.plan_id
+where p.plan_name = "pro monthly" and np.plan = 1 and start_date < "2020-12-31";         
+
 
   
              /*************** End ********************/
